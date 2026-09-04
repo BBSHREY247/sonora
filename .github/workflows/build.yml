@@ -5,6 +5,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -47,7 +50,10 @@ jobs:
 
       - name: Build APK
         working-directory: android
-        run: ./gradlew assembleDebug --stacktrace 2>&1 | tail -200
+        run: ./gradlew assembleDebug
+
+      - name: Find APK file
+        run: find android/app/build/outputs -name "*.apk" -type f
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
