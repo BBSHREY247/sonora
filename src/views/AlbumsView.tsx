@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { Disc3, Search } from 'lucide-react';
 import { useLibrary } from '../context/LibraryContext';
-import { Album, ActiveView } from '../types';
-import { api } from '../services/api';
+import { Album } from '../types';
 
 export const AlbumsView: React.FC = () => {
   const { albums, openAlbumDetail, activeView, setActiveView } = useLibrary();
   const [filterText, setFilterText] = useState('');
 
-  const libraryTabs: { view: ActiveView; label: string }[] = [
+  const libraryTabs: { view: string; label: string }[] = [
     { view: 'songs', label: 'Songs' },
     { view: 'albums', label: 'Albums' },
     { view: 'artists', label: 'Artists' },
@@ -28,7 +27,7 @@ export const AlbumsView: React.FC = () => {
         {libraryTabs.map(tab => (
           <button
             key={tab.view}
-            onClick={() => setActiveView(tab.view)}
+            onClick={() => setActiveView(tab.view as any)}
             className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
               activeView === tab.view
                 ? 'bg-sonora-accent text-sonora-base shadow-md shadow-sonora-accent/20'
@@ -71,14 +70,14 @@ export const AlbumsView: React.FC = () => {
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
         {filteredAlbums.map((album: Album) => (
           <div
-            key={`${album.name}-${album.artist}`}
+            key={album.id}
             onClick={() => openAlbumDetail(album)}
             className="group glass-card p-2.5 sm:p-3 rounded-2xl cursor-pointer active:scale-95 transition-transform"
           >
             <div className="relative aspect-square rounded-xl overflow-hidden bg-sonora-elevated mb-2.5 shadow-md">
-              {album.cover_path ? (
+              {album.artworkUri ? (
                 <img
-                  src={api.getCoverArtUrl(album.cover_path) || ''}
+                  src={album.artworkUri}
                   alt={album.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
@@ -95,7 +94,7 @@ export const AlbumsView: React.FC = () => {
               {album.artist}
             </p>
             <span className="text-[10px] text-sonora-muted/80">
-              {album.song_count} {album.song_count === 1 ? 'song' : 'songs'}
+              {album.songCount} {album.songCount === 1 ? 'song' : 'songs'}
             </span>
           </div>
         ))}

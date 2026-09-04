@@ -1,6 +1,20 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { Song, Album, Artist, Playlist, DownloadJob, AppSettings, ActiveView } from '../types';
-import { api } from '../services/api';
+import { Song, Album, Artist, Playlist, DownloadJob, PlaylistWithSongs } from '../plugins';
+import { Library, Download, Settings } from '../plugins';
+
+type ActiveView = 
+  | 'home'
+  | 'songs'
+  | 'albums'
+  | 'album-detail'
+  | 'artists'
+  | 'artist-detail'
+  | 'playlists'
+  | 'playlist-detail'
+  | 'favorites'
+  | 'downloads'
+  | 'search'
+  | 'settings';
 
 interface LibraryContextType {
   songs: Song[];
@@ -9,11 +23,11 @@ interface LibraryContextType {
   artists: Artist[];
   playlists: Playlist[];
   downloads: DownloadJob[];
-  settings: AppSettings | null;
+  settings: Record<string, string>;
   activeView: ActiveView;
   selectedAlbum: Album | null;
   selectedArtist: Artist | null;
-  selectedPlaylist: Playlist | null;
+  selectedPlaylist: PlaylistWithSongs | null;
   isScanning: boolean;
   activeDownloadsCount: number;
   
@@ -22,16 +36,18 @@ interface LibraryContextType {
   refreshLibrary: () => Promise<void>;
   refreshPlaylists: () => Promise<void>;
   refreshDownloads: () => Promise<void>;
-  triggerScan: (dir?: string) => Promise<any>;
-  toggleFavorite: (songId: string) => Promise<void>;
-  createNewPlaylist: (name: string, description?: string) => Promise<Playlist>;
-  deletePlaylistById: (id: string) => Promise<void>;
-  addSongToPlaylistById: (playlistId: string, songId: string) => Promise<void>;
-  removeSongFromPlaylistById: (playlistId: string, itemId: string) => Promise<void>;
+  triggerScan: () => Promise<void>;
+  toggleFavorite: (songId: number, favorite: boolean) => Promise<void>;
+  createNewPlaylist: (name: string, description?: string, songIds?: number[]) => Promise<number>;
+  deletePlaylistById: (id: number) => Promise<void>;
+  addSongToPlaylistById: (playlistId: number, songId: number) => Promise<void>;
+  removeSongFromPlaylistById: (playlistId: number, songId: number) => Promise<void>;
   openAlbumDetail: (album: Album) => void;
   openArtistDetail: (artist: Artist) => void;
-  openPlaylistDetail: (playlist: Playlist) => void;
-  saveAppSettings: (newSettings: Partial<AppSettings>) => Promise<void>;
+  openPlaylistDetail: (playlist: PlaylistWithSongs) => void;
+  getSongsByAlbum: (albumName: string, artistName: string) => Promise<Song[]>;
+  getSongsByArtist: (artistName: string) => Promise<Song[]>;
+  saveAppSettings: (newSettings: Record<string, string>) => Promise<void>;
 }
 
 const LibraryContext = createContext<LibraryContextType | undefined>(undefined);
@@ -43,32 +59,32 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [artists, setArtists] = useState<Artist[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [downloads, setDownloads] = useState<DownloadJob[]>([]);
-  const [settings, setSettings] = useState<AppSettings | null>(null);
+  const [settings, setSettings] = useState<Record<string, string>>({});
   
   const [activeView, setActiveView] = useState<ActiveView>('home');
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
   const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
-  const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
+  const [selectedPlaylist, setSelectedPlaylist] = useState<PlaylistWithSongs | null>(null);
   const [isScanning, setIsScanning] = useState(false);
 
   const activeDownloadsCount = downloads.filter(d => 
-    d.status === 'queued' || d.status === 'downloading' || d.status === 'converting' || d.status === 'tagging'
+    d.status === 'queued' || d.status === 'downloading' || d.status === 'processing' || d.status === 'tagging'
   ).length;
 
   const refreshLibrary = useCallback(async () => {
     try {
       const [allSongs, favSongs, allAlbums, allArtists, allPlaylists] = await Promise.all([
-        api.getSongs(),
-        api.getSongs('title', 'ASC', true),
-        api.getAlbums(),
-        api.getArtists(),
-        api.getPlaylists()
+        Library.getSongs(),
+        Library.getFavorites(),
+        Library.getAlbums(),
+        Library.getArtists(),
+        Library.getPlaylists(),
       ]);
-      setSongs(allSongs);
-      setFavoriteSongs(favSongs);
-      setAlbums(allAlbums);
-      setArtists(allArtists);
-      setPlaylists(allPlaylists);
+      setSongs(allSongs.songs);
+      setFavoriteSongs(favSongs.songs);
+      setAlbums(allAlbums.albums);
+      setArtists(allArtists.artists);
+      setPlaylists(allPlaylists.playlists);
     } catch (e) {
       console.error('Error fetching library:', e);
     }
@@ -76,8 +92,8 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const refreshPlaylists = async () => {
     try {
-      const allPlaylists = await api.getPlaylists();
-      setPlaylists(allPlaylists);
+      const allPlaylists = await Library.getPlaylists();
+      setPlaylists(allPlaylists.playlists);
     } catch (e) {
       console.error('Error fetching playlists:', e);
     }
@@ -85,8 +101,8 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const refreshDownloads = async () => {
     try {
-      const list = await api.getDownloads();
-      setDownloads(list);
+      const list = await Download.getDownloads();
+      setDownloads(list.downloads);
     } catch (e) {
       console.error('Error fetching downloads:', e);
     }
@@ -94,82 +110,47 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const loadSettings = async () => {
     try {
-      const current = await api.getSettings();
+      const current = await Settings.getSettings();
       setSettings(current);
     } catch (e) {
       console.error('Error loading settings:', e);
     }
   };
 
-  const saveAppSettings = async (newSettings: Partial<AppSettings>) => {
+  const saveAppSettings = async (newSettings: Record<string, string>) => {
     try {
-      const updated = await api.saveSettings(newSettings);
-      setSettings(updated);
+      await Settings.setMultipleSettings({ settings: newSettings });
+      setSettings(prev => ({ ...prev, ...newSettings }));
     } catch (e) {
       console.error('Error saving settings:', e);
       throw e;
     }
   };
 
-  // Initial load & WebSocket subscription
   useEffect(() => {
     refreshLibrary();
     refreshDownloads();
     loadSettings();
-
-    // WebSocket for real-time download and library notifications
-    let ws: WebSocket | null = null;
-    try {
-      ws = api.createDownloadWebSocket((data) => {
-        if (data.type === 'DOWNLOAD_UPDATE') {
-          setDownloads(prev => {
-            const index = prev.findIndex(j => j.id === data.job.id);
-            if (index !== -1) {
-              const updated = [...prev];
-              updated[index] = data.job;
-              return updated;
-            }
-            return [data.job, ...prev];
-          });
-          // If job completed, auto-refresh library to show new song
-          if (data.job.status === 'complete') {
-            refreshLibrary();
-          }
-        } else if (data.type === 'DOWNLOAD_SNAPSHOT') {
-          setDownloads(data.jobs || []);
-        } else if (data.type === 'LIBRARY_UPDATED') {
-          refreshLibrary();
-        }
-      });
-    } catch (e) {
-      console.warn('Could not initialize WebSocket:', e);
-    }
-
-    return () => {
-      if (ws) ws.close();
-    };
   }, [refreshLibrary]);
 
-  const triggerScan = async (dir?: string) => {
+  const triggerScan = async () => {
     setIsScanning(true);
     try {
-      const res = await api.scanLibrary(dir);
+      await Library.scanLibrary();
       await refreshLibrary();
-      return res;
     } finally {
       setIsScanning(false);
     }
   };
 
-  const toggleFavorite = async (songId: string) => {
+  const toggleFavorite = async (songId: number, favorite: boolean) => {
     try {
-      const isFav = await api.toggleFavorite(songId);
-      // Optimistic update
-      setSongs(prev => prev.map(s => s.id === songId ? { ...s, favorite: isFav } : s));
-      if (isFav) {
+      await Library.toggleFavorite({ songId, favorite });
+      setSongs(prev => prev.map(s => s.id === songId ? { ...s, favorite } : s));
+      if (favorite) {
         const target = songs.find(s => s.id === songId);
         if (target) {
-          setFavoriteSongs(prev => [{ ...target, favorite: 1 }, ...prev]);
+          setFavoriteSongs(prev => [{ ...target, favorite: true }, ...prev]);
         }
       } else {
         setFavoriteSongs(prev => prev.filter(s => s.id !== songId));
@@ -179,35 +160,35 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  const createNewPlaylist = async (name: string, description: string = '') => {
-    const pl = await api.createPlaylist(name, description);
+  const createNewPlaylist = async (name: string, description?: string, songIds: number[] = []) => {
+    const result = await Library.createPlaylist({ name, songIds });
     await refreshPlaylists();
-    return pl;
+    return result.id;
   };
 
-  const deletePlaylistById = async (id: string) => {
-    await api.deletePlaylist(id);
+  const deletePlaylistById = async (id: number) => {
+    await Library.deletePlaylist({ id });
     await refreshPlaylists();
-    if (selectedPlaylist?.id === id) {
+    if (selectedPlaylist?.playlist.id === id) {
       setActiveView('playlists');
       setSelectedPlaylist(null);
     }
   };
 
-  const addSongToPlaylistById = async (playlistId: string, songId: string) => {
-    await api.addSongToPlaylist(playlistId, songId);
+  const addSongToPlaylistById = async (playlistId: number, songId: number) => {
+    await Library.addSongToPlaylist({ playlistId, songId });
     await refreshPlaylists();
-    if (selectedPlaylist?.id === playlistId) {
-      const updated = await api.getPlaylist(playlistId);
+    if (selectedPlaylist?.playlist.id === playlistId) {
+      const updated = await Library.getPlaylistSongs({ playlistId });
       setSelectedPlaylist(updated);
     }
   };
 
-  const removeSongFromPlaylistById = async (playlistId: string, itemId: string) => {
-    await api.removeSongFromPlaylist(playlistId, itemId);
+  const removeSongFromPlaylistById = async (playlistId: number, songId: number) => {
+    await Library.removeSongFromPlaylist({ playlistId, songId });
     await refreshPlaylists();
-    if (selectedPlaylist?.id === playlistId) {
-      const updated = await api.getPlaylist(playlistId);
+    if (selectedPlaylist?.playlist.id === playlistId) {
+      const updated = await Library.getPlaylistSongs({ playlistId });
       setSelectedPlaylist(updated);
     }
   };
@@ -222,9 +203,17 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setActiveView('artist-detail');
   };
 
-  const openPlaylistDetail = (playlist: Playlist) => {
+  const openPlaylistDetail = (playlist: PlaylistWithSongs) => {
     setSelectedPlaylist(playlist);
     setActiveView('playlist-detail');
+  };
+
+  const getSongsByAlbum = async (albumName: string, artistName: string): Promise<Song[]> => {
+    return songs.filter(s => s.album === albumName && s.artist === artistName);
+  };
+
+  const getSongsByArtist = async (artistName: string): Promise<Song[]> => {
+    return songs.filter(s => s.artist === artistName);
   };
 
   return (
@@ -256,6 +245,8 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         openAlbumDetail,
         openArtistDetail,
         openPlaylistDetail,
+        getSongsByAlbum,
+        getSongsByArtist,
         saveAppSettings
       }}
     >

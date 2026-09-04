@@ -9,7 +9,7 @@ export const SongsView: React.FC = () => {
   const { songs, activeView, setActiveView } = useLibrary();
   const { playList, toggleShuffle } = usePlayer();
   const [filterText, setFilterText] = useState('');
-  const [sortBy, setSortBy] = useState<'title' | 'artist' | 'album' | 'duration' | 'date_added'>('title');
+  const [sortBy, setSortBy] = useState<'title' | 'artist' | 'album' | 'duration' | 'dateAdded'>('title');
   const [sortAsc, setSortAsc] = useState(true);
 
   const libraryTabs: { view: ActiveView; label: string }[] = [
@@ -24,7 +24,7 @@ export const SongsView: React.FC = () => {
     .filter(s => 
       s.title.toLowerCase().includes(filterText.toLowerCase()) ||
       s.artist.toLowerCase().includes(filterText.toLowerCase()) ||
-      s.album.toLowerCase().includes(filterText.toLowerCase())
+      (s.album || '').toLowerCase().includes(filterText.toLowerCase())
     )
     .sort((a, b) => {
       let valA = a[sortBy] ?? '';

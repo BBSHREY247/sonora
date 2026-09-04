@@ -8,17 +8,12 @@ import {
   Heart, 
   Download, 
   PlusCircle,
-  Radio
+  Radio,
+  Settings
 } from 'lucide-react';
 import { useLibrary } from '../context/LibraryContext';
-import { ActiveView, Playlist } from '../types';
 
-interface SidebarProps {
-  onOpenCreatePlaylist: () => void;
-  onOpenImporter: () => void;
-}
-
-export const Sidebar: React.FC<SidebarProps> = ({ onOpenCreatePlaylist, onOpenImporter }) => {
+export const Sidebar: React.FC = () => {
   const { 
     activeView, 
     setActiveView, 
@@ -28,7 +23,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenCreatePlaylist, onOpenIm
     selectedPlaylist 
   } = useLibrary();
 
-  const navItems: { view: ActiveView; label: string; icon: React.ReactNode; badge?: number }[] = [
+  const navItems: { view: string; label: string; icon: React.ReactNode; badge?: number }[] = [
     { view: 'home', label: 'Home', icon: <Home className="w-5 h-5" /> },
     { view: 'songs', label: 'Songs', icon: <Music2 className="w-5 h-5" /> },
     { view: 'albums', label: 'Albums', icon: <Disc3 className="w-5 h-5" /> },
@@ -45,10 +40,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenCreatePlaylist, onOpenIm
         </div>
         <div>
           <span className="text-xl font-extrabold tracking-wider bg-gradient-to-r from-white via-slate-100 to-sonora-muted bg-clip-text text-transparent font-['Plus_Jakarta_Sans']">
-            SONORA
+            PYRACUBE
           </span>
           <p className="text-[10px] tracking-widest text-sonora-accent font-semibold uppercase">
-            Music Station
+            Offline Music Player
           </p>
         </div>
       </div>
@@ -63,7 +58,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenCreatePlaylist, onOpenIm
           return (
             <button
               key={item.view}
-              onClick={() => setActiveView(item.view)}
+              onClick={() => setActiveView(item.view as any)}
               className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                 isActive
                   ? 'bg-sonora-accent/15 text-sonora-accent font-semibold'
@@ -86,7 +81,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenCreatePlaylist, onOpenIm
 
       <div className="my-4 mx-3 border-t border-sonora-border/40" />
 
-      {/* Library Collections & Import */}
+      {/* Library Collections */}
       <div className="px-3 space-y-1">
         <p className="px-3 text-[11px] font-bold text-sonora-muted uppercase tracking-wider mb-2">
           Library
@@ -122,14 +117,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenCreatePlaylist, onOpenIm
             </span>
           )}
         </button>
-
-        <button
-          onClick={onOpenImporter}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-sonora-accent hover:bg-sonora-accent/10 transition-all group"
-        >
-          <PlusCircle className="w-5 h-5 transition-transform group-hover:rotate-90" />
-          <span>Import Music</span>
-        </button>
       </div>
 
       <div className="my-4 mx-3 border-t border-sonora-border/40" />
@@ -141,7 +128,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenCreatePlaylist, onOpenIm
             Playlists
           </p>
           <button
-            onClick={onOpenCreatePlaylist}
+            onClick={() => setActiveView('playlists')}
             title="Create Playlist"
             className="text-sonora-muted hover:text-sonora-accent transition-colors"
           >
@@ -150,8 +137,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenCreatePlaylist, onOpenIm
         </div>
 
         <div className="flex-1 overflow-y-auto space-y-0.5 pr-1">
-          {playlists.map((playlist: Playlist) => {
-            const isSelected = activeView === 'playlist-detail' && selectedPlaylist?.id === playlist.id;
+          {playlists.map((playlist: any) => {
+            const isSelected = activeView === 'playlist-detail' && selectedPlaylist?.playlist.id === playlist.id;
             return (
               <button
                 key={playlist.id}
@@ -172,6 +159,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenCreatePlaylist, onOpenIm
             </p>
           )}
         </div>
+      </div>
+
+      {/* Settings at bottom */}
+      <div className="p-3 border-t border-sonora-border/40">
+        <button
+          onClick={() => setActiveView('settings')}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sonora-muted hover:text-sonora-light hover:bg-white/5 transition-all"
+        >
+          <Settings className="w-5 h-5" />
+          <span>Settings</span>
+        </button>
       </div>
     </aside>
   );

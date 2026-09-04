@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Play, Sparkles, Clock, Heart, Disc3, Music, ListMusic, PlusCircle, RefreshCw } from 'lucide-react';
 import { useLibrary } from '../context/LibraryContext';
 import { usePlayer } from '../context/PlayerContext';
-import { api } from '../services/api';
 import { Song, Album, Playlist } from '../types';
 
 export const HomeView: React.FC = () => {
@@ -22,7 +21,8 @@ export const HomeView: React.FC = () => {
   const [recentlyPlayed, setRecentlyPlayed] = useState<Song[]>([]);
 
   useEffect(() => {
-    api.getRecentlyPlayed(8).then(setRecentlyPlayed).catch(console.warn);
+    // Recently played will be loaded via native player
+    setRecentlyPlayed([]);
   }, [songs]);
 
   const getGreeting = () => {
@@ -42,7 +42,7 @@ export const HomeView: React.FC = () => {
     ...playlists.slice(0, 5).map(p => ({
       title: p.name,
       count: 'Playlist',
-      onClick: () => openPlaylistDetail(p),
+      onClick: () => openPlaylistDetail({ playlist: p, songs: [] }),
       icon: <Music className="w-5 h-5 text-sonora-accent" />
     }))
   ].slice(0, 6);
@@ -58,7 +58,7 @@ export const HomeView: React.FC = () => {
             {getGreeting()}
           </h1>
           <p className="text-xs text-sonora-muted mt-0.5">
-            Sonora Audio Station • Android Edition
+            Pyracube Audio Station • Android Edition
           </p>
         </div>
 
@@ -127,9 +127,9 @@ export const HomeView: React.FC = () => {
                 className="group glass-card p-2.5 sm:p-3 rounded-2xl cursor-pointer active:scale-95 transition-transform"
               >
                 <div className="relative aspect-square rounded-xl overflow-hidden bg-sonora-elevated mb-2.5 shadow-md">
-                  {song.cover_path ? (
+                  {song.artworkUri ? (
                     <img
-                      src={api.getCoverArtUrl(song.cover_path) || ''}
+                      src={song.artworkUri}
                       alt={song.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
@@ -177,9 +177,9 @@ export const HomeView: React.FC = () => {
               className="group glass-card p-2.5 sm:p-3 rounded-2xl cursor-pointer active:scale-95 transition-transform"
             >
               <div className="relative aspect-square rounded-xl overflow-hidden bg-sonora-elevated mb-2.5 shadow-md">
-                {song.cover_path ? (
+                {song.artworkUri ? (
                   <img
-                    src={api.getCoverArtUrl(song.cover_path) || ''}
+                    src={song.artworkUri}
                     alt={song.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
@@ -205,7 +205,7 @@ export const HomeView: React.FC = () => {
             <div className="col-span-full py-10 text-center text-sonora-muted space-y-2 bg-sonora-card/50 rounded-2xl border border-sonora-border/40 p-6">
               <Music className="w-10 h-10 mx-auto text-sonora-muted/40 mb-2" />
               <p className="text-sm font-semibold text-sonora-light">Your library is currently empty</p>
-              <p className="text-xs">Import YouTube tracks or scan your local storage to get started.</p>
+              <p className="text-xs">Scan local storage or import music to get started.</p>
             </div>
           )}
         </div>
@@ -230,14 +230,14 @@ export const HomeView: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
             {albums.slice(0, 6).map((album: Album) => (
               <div
-                key={`${album.name}-${album.artist}`}
+                key={album.id}
                 onClick={() => openAlbumDetail(album)}
                 className="group glass-card p-2.5 sm:p-3 rounded-2xl cursor-pointer active:scale-95 transition-transform"
               >
                 <div className="relative aspect-square rounded-xl overflow-hidden bg-sonora-elevated mb-2.5 shadow-md">
-                  {album.cover_path ? (
+                  {album.artworkUri ? (
                     <img
-                      src={api.getCoverArtUrl(album.cover_path) || ''}
+                      src={album.artworkUri}
                       alt={album.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />

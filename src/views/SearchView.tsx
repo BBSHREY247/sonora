@@ -3,7 +3,7 @@ import { Search, Play, Music, Disc3, User, ListMusic } from 'lucide-react';
 import { useLibrary } from '../context/LibraryContext';
 import { usePlayer } from '../context/PlayerContext';
 import { SongRow } from '../components/SongRow';
-import { api } from '../services/api';
+import { Library } from '../plugins';
 import { Song, Album, Artist, Playlist } from '../types';
 
 interface SearchViewProps {
@@ -32,8 +32,9 @@ export const SearchView: React.FC<SearchViewProps> = ({ searchQuery, setSearchQu
     const timer = setTimeout(async () => {
       setIsSearching(true);
       try {
-        const data = await api.search(searchQuery.trim());
-        setResults(data);
+        const data = await Library.searchSongs({ query: searchQuery.trim() });
+        // For now, we only search songs. Future enhancement: add artist/album/playlist search
+        setResults({ songs: data.songs, artists: [], albums: [], playlists: [] });
       } catch (e) {
         console.warn('Search failed:', e);
       } finally {
@@ -106,9 +107,9 @@ export const SearchView: React.FC<SearchViewProps> = ({ searchQuery, setSearchQu
                   className="group relative p-5 rounded-2xl bg-sonora-card hover:bg-sonora-elevated border border-sonora-border/60 hover:border-sonora-accent/30 cursor-pointer transition-all shadow-md active:scale-98"
                 >
                   <div className="w-20 h-20 rounded-xl overflow-hidden bg-sonora-elevated mb-4 shadow-lg">
-                    {topSong.cover_path ? (
+                    {topSong.artworkUri ? (
                       <img
-                        src={api.getCoverArtUrl(topSong.cover_path) || ''}
+                        src={topSong.artworkUri}
                         alt={topSong.title}
                         className="w-full h-full object-cover"
                       />
@@ -152,7 +153,7 @@ export const SearchView: React.FC<SearchViewProps> = ({ searchQuery, setSearchQu
             </div>
           )}
 
-          {/* Artists */}
+          {/* Artists - placeholder for future enhancement */}
           {(filterCategory === 'all' || filterCategory === 'artists') && results.artists.length > 0 && (
             <section className="space-y-3">
               <h3 className="text-sm font-bold text-sonora-light uppercase tracking-wider">
@@ -161,13 +162,13 @@ export const SearchView: React.FC<SearchViewProps> = ({ searchQuery, setSearchQu
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                 {results.artists.map((artist: Artist) => (
                   <div
-                    key={artist.name}
+                    key={artist.id}
                     onClick={() => openArtistDetail(artist)}
                     className="group glass-card p-3 rounded-2xl cursor-pointer flex flex-col items-center text-center active:scale-95 transition-transform"
                   >
                     <div className="w-24 h-24 rounded-full overflow-hidden bg-sonora-elevated mb-2.5 shadow-md">
-                      {artist.cover_path ? (
-                        <img src={api.getCoverArtUrl(artist.cover_path) || ''} alt={artist.name} className="w-full h-full object-cover" />
+                      {artist.artworkUri ? (
+                        <img src={artist.artworkUri} alt={artist.name} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-sonora-muted">
                           <User className="w-8 h-8" />
@@ -184,7 +185,7 @@ export const SearchView: React.FC<SearchViewProps> = ({ searchQuery, setSearchQu
             </section>
           )}
 
-          {/* Albums */}
+          {/* Albums - placeholder for future enhancement */}
           {(filterCategory === 'all' || filterCategory === 'albums') && results.albums.length > 0 && (
             <section className="space-y-3">
               <h3 className="text-sm font-bold text-sonora-light uppercase tracking-wider">
@@ -193,13 +194,13 @@ export const SearchView: React.FC<SearchViewProps> = ({ searchQuery, setSearchQu
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                 {results.albums.map((album: Album) => (
                   <div
-                    key={`${album.name}-${album.artist}`}
+                    key={album.id}
                     onClick={() => openAlbumDetail(album)}
                     className="group glass-card p-2.5 rounded-2xl cursor-pointer active:scale-95 transition-transform"
                   >
                     <div className="relative aspect-square rounded-xl overflow-hidden bg-sonora-elevated mb-2 shadow-md">
-                      {album.cover_path ? (
-                        <img src={api.getCoverArtUrl(album.cover_path) || ''} alt={album.name} className="w-full h-full object-cover" />
+                      {album.artworkUri ? (
+                        <img src={album.artworkUri} alt={album.name} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-sonora-muted">
                           <Disc3 className="w-8 h-8" />
@@ -218,7 +219,7 @@ export const SearchView: React.FC<SearchViewProps> = ({ searchQuery, setSearchQu
             </section>
           )}
 
-          {/* Playlists */}
+          {/* Playlists - placeholder for future enhancement */}
           {(filterCategory === 'all' || filterCategory === 'playlists') && results.playlists.length > 0 && (
             <section className="space-y-3">
               <h3 className="text-sm font-bold text-sonora-light uppercase tracking-wider">
@@ -228,7 +229,7 @@ export const SearchView: React.FC<SearchViewProps> = ({ searchQuery, setSearchQu
                 {results.playlists.map((pl: Playlist) => (
                   <div
                     key={pl.id}
-                    onClick={() => openPlaylistDetail(pl)}
+                    onClick={() => openPlaylistDetail({ playlist: pl, songs: [] })}
                     className="group glass-card p-2.5 rounded-2xl cursor-pointer active:scale-95 transition-transform"
                   >
                     <div className="relative aspect-square rounded-xl overflow-hidden bg-sonora-elevated mb-2 shadow-md flex items-center justify-center">
@@ -259,7 +260,7 @@ export const SearchView: React.FC<SearchViewProps> = ({ searchQuery, setSearchQu
         /* Explore / Browse placeholder */
         <div className="py-16 text-center text-sonora-muted space-y-2">
           <Search className="w-12 h-12 mx-auto text-sonora-muted/30 mb-2" />
-          <p className="text-base font-semibold text-sonora-light">Search Your Sonora Collection</p>
+          <p className="text-base font-semibold text-sonora-light">Search Your Pyracube Collection</p>
           <p className="text-xs max-w-sm mx-auto">
             Find your favorite tracks, artists, albums, and playlists instantly.
           </p>

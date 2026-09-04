@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
 import { useLibrary } from '../context/LibraryContext';
-import { api } from '../services/api';
 
 export const VisualizerOverlay: React.FC = () => {
   const {
@@ -41,7 +40,7 @@ export const VisualizerOverlay: React.FC = () => {
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  const coverUrl = currentSong ? api.getCoverArtUrl(currentSong.cover_path) : null;
+  const coverUrl = currentSong ? currentSong.artworkUri : null;
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   // Render frequency bars array
@@ -61,7 +60,7 @@ export const VisualizerOverlay: React.FC = () => {
       <div className="flex items-center justify-between z-10">
         <div className="flex items-center gap-3">
           <span className="text-xs font-bold tracking-widest text-sonora-accent uppercase">
-            SONORA LIVE SPECTRUM
+            PYRACUBE LIVE SPECTRUM
           </span>
         </div>
         <div className="flex items-center gap-3">
@@ -142,7 +141,7 @@ export const VisualizerOverlay: React.FC = () => {
         {/* Fullscreen Controls */}
         <div className="flex items-center justify-center gap-8">
           <button
-            onClick={() => currentSong && toggleFavorite(currentSong.id)}
+            onClick={() => currentSong && toggleFavorite(currentSong.id, !currentSong.favorite)}
             className="text-sonora-muted hover:text-rose-500 transition-colors"
           >
             <Heart className={`w-6 h-6 ${currentSong?.favorite ? 'fill-rose-500 text-rose-500' : ''}`} />

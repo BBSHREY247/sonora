@@ -2,7 +2,6 @@ import React from 'react';
 import { Play, Pause, Heart, Music, SkipForward } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
 import { useLibrary } from '../context/LibraryContext';
-import { api } from '../services/api';
 
 interface AndroidMiniPlayerProps {
   onExpand: () => void;
@@ -15,7 +14,7 @@ export const AndroidMiniPlayer: React.FC<AndroidMiniPlayerProps> = ({ onExpand }
   if (!currentSong) return null;
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
-  const coverUrl = api.getCoverArtUrl(currentSong.cover_path);
+  const coverUrl = currentSong.artworkUri;
 
   return (
     <div className="fixed bottom-16 left-2 right-2 z-20 select-none animate-slide-up">
@@ -58,7 +57,7 @@ export const AndroidMiniPlayer: React.FC<AndroidMiniPlayerProps> = ({ onExpand }
           <button
             onClick={(e) => {
               e.stopPropagation();
-              toggleFavorite(currentSong.id);
+              toggleFavorite(currentSong.id, !currentSong.favorite);
             }}
             className="p-1.5 text-sonora-muted hover:text-rose-500 transition-colors"
           >

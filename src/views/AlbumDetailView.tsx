@@ -3,11 +3,10 @@ import { ArrowLeft, Play, Shuffle, Disc3 } from 'lucide-react';
 import { useLibrary } from '../context/LibraryContext';
 import { usePlayer } from '../context/PlayerContext';
 import { SongRow } from '../components/SongRow';
-import { api } from '../services/api';
 import { Song } from '../types';
 
 export const AlbumDetailView: React.FC = () => {
-  const { selectedAlbum, setActiveView, openArtistDetail } = useLibrary();
+  const { selectedAlbum, setActiveView, openArtistDetail, getSongsByAlbum } = useLibrary();
   const { playList, toggleShuffle } = usePlayer();
   const [songs, setSongs] = useState<Song[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -15,7 +14,7 @@ export const AlbumDetailView: React.FC = () => {
   useEffect(() => {
     if (selectedAlbum) {
       setIsLoading(true);
-      api.getAlbumSongs(selectedAlbum.name, selectedAlbum.artist)
+      getSongsByAlbum(selectedAlbum.name, selectedAlbum.artist)
         .then(setSongs)
         .finally(() => setIsLoading(false));
     }
@@ -38,8 +37,6 @@ export const AlbumDetailView: React.FC = () => {
     }
   };
 
-  const coverUrl = api.getCoverArtUrl(selectedAlbum.cover_path);
-
   return (
     <div className="p-4 sm:p-8 space-y-6 overflow-y-auto h-full pb-32 select-none">
       {/* Back Button */}
@@ -54,8 +51,8 @@ export const AlbumDetailView: React.FC = () => {
       {/* Hero Album Header */}
       <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6 pb-6 border-b border-sonora-border/40">
         <div className="relative w-44 h-44 sm:w-52 sm:h-52 rounded-2xl overflow-hidden bg-sonora-elevated shadow-2xl flex-shrink-0 border border-white/10">
-          {coverUrl ? (
-            <img src={coverUrl} alt={selectedAlbum.name} className="w-full h-full object-cover" />
+          {selectedAlbum.artworkUri ? (
+            <img src={selectedAlbum.artworkUri} alt={selectedAlbum.name} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-sonora-muted">
               <Disc3 className="w-16 h-16" />
@@ -71,7 +68,7 @@ export const AlbumDetailView: React.FC = () => {
             {selectedAlbum.name}
           </h1>
           <p 
-            onClick={() => openArtistDetail({ name: selectedAlbum.artist, song_count: 1, album_count: 1, cover_path: selectedAlbum.cover_path })}
+            onClick={() => openArtistDetail({ id: 0, name: selectedAlbum.artist, artworkUri: selectedAlbum.artworkUri, songCount: 1, albumCount: 1 })}
             className="text-sm font-semibold text-sonora-light hover:text-sonora-accent cursor-pointer transition-colors"
           >
             {selectedAlbum.artist} {selectedAlbum.year ? `• ${selectedAlbum.year}` : ''} • {songs.length} {songs.length === 1 ? 'song' : 'songs'}

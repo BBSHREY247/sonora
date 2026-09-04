@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useLibrary } from './context/LibraryContext';
 import { usePlayer } from './context/PlayerContext';
 import { Sidebar } from './components/Sidebar';
@@ -9,10 +9,8 @@ import { AndroidMiniPlayer } from './components/AndroidMiniPlayer';
 import { AndroidExpandedPlayer } from './components/AndroidExpandedPlayer';
 import { QueueDrawer } from './components/QueueDrawer';
 import { VisualizerOverlay } from './components/VisualizerOverlay';
-import { ImportModal } from './components/ImportModal';
 import { CreatePlaylistModal } from './components/CreatePlaylistModal';
 import { SettingsModal } from './components/SettingsModal';
-import { setupMediaSession } from './services/mediaSession';
 
 import { HomeView } from './views/HomeView';
 import { SongsView } from './views/SongsView';
@@ -32,21 +30,9 @@ export const AppContent: React.FC = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isQueueOpen, setIsQueueOpen] = useState(false);
-  const [isImporterOpen, setIsImporterOpen] = useState(false);
   const [isCreatePlaylistOpen, setIsCreatePlaylistOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAndroidPlayerExpanded, setIsAndroidPlayerExpanded] = useState(false);
-
-  // Sync with Android MediaSession for Lock Screen & Notification Controls
-  useEffect(() => {
-    setupMediaSession(currentSong, {
-      onPlay: togglePlay,
-      onPause: togglePlay,
-      onNext: playNext,
-      onPrevious: playPrevious,
-      onSeek: seek,
-    });
-  }, [currentSong, togglePlay, playNext, playPrevious, seek]);
 
   const renderActiveView = () => {
     switch (activeView) {
@@ -69,7 +55,7 @@ export const AppContent: React.FC = () => {
       case 'favorites':
         return <FavoritesView />;
       case 'downloads':
-        return <DownloadsView onOpenImporter={() => setIsImporterOpen(true)} />;
+        return <DownloadsView />;
       case 'search':
         return <SearchView searchQuery={searchQuery} setSearchQuery={setSearchQuery} />;
       default:
@@ -81,10 +67,7 @@ export const AppContent: React.FC = () => {
     <div className="flex h-screen w-screen bg-sonora-base text-sonora-light overflow-hidden font-sans select-none">
       {/* Desktop Sidebar (hidden on mobile) */}
       <div className="hidden md:flex">
-        <Sidebar
-          onOpenCreatePlaylist={() => setIsCreatePlaylistOpen(true)}
-          onOpenImporter={() => setIsImporterOpen(true)}
-        />
+        <Sidebar />
       </div>
 
       {/* Main Content Area */}
@@ -93,7 +76,6 @@ export const AppContent: React.FC = () => {
         <div className="hidden md:block">
           <Header
             onOpenSettings={() => setIsSettingsOpen(true)}
-            onOpenImporter={() => setIsImporterOpen(true)}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
           />
@@ -119,7 +101,7 @@ export const AppContent: React.FC = () => {
 
         {/* Mobile Android Bottom Navigation */}
         <div className="block md:hidden">
-          <AndroidBottomNav onOpenImporter={() => setIsImporterOpen(true)} />
+          <AndroidBottomNav />
         </div>
       </div>
 
@@ -143,11 +125,6 @@ export const AppContent: React.FC = () => {
       <VisualizerOverlay />
 
       {/* Modals */}
-      <ImportModal
-        isOpen={isImporterOpen}
-        onClose={() => setIsImporterOpen(false)}
-      />
-
       <CreatePlaylistModal
         isOpen={isCreatePlaylistOpen}
         onClose={() => setIsCreatePlaylistOpen(false)}

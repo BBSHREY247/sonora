@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, FolderOpen, Save, CheckCircle2, Sliders, HardDrive, Palette } from 'lucide-react';
+import { X, FolderOpen, Save, CheckCircle2, Sliders, HardDrive, Palette, RefreshCw } from 'lucide-react';
 import { useLibrary } from '../context/LibraryContext';
-import { AppSettings } from '../types';
+import { Storage } from '../plugins';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -10,24 +10,27 @@ interface SettingsModalProps {
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const { settings, saveAppSettings, triggerScan } = useLibrary();
-  const [formData, setFormData] = useState<Partial<AppSettings>>({});
+  const [formData, setFormData] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [storageUri, setStorageUri] = useState<string>('');
 
   useEffect(() => {
     if (settings) {
       setFormData(settings);
+      setStorageUri(settings.music_directory || '');
     }
   }, [settings]);
 
   if (!isOpen) return null;
 
-  const handleSelectFolder = async () => {
-    if ((window as any).electronAPI?.selectDirectory) {
-      const selected = await (window as any).electronAPI.selectDirectory();
-      if (selected) {
-        setFormData(prev => ({ ...prev, music_directory: selected }));
-      }
+  const handlePickStorage = async () => {
+    try {
+      const result = await Storage.pickFolder();
+      setStorageUri(result.uri);
+      setFormData(prev => ({ ...prev, music_directory: result.uri }));
+    } catch (e) {
+      console.error('Failed to pick folder:', e);
     }
   };
 
@@ -41,9 +44,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         setSuccess(false);
         onClose();
       }, 1000);
-      // Automatically trigger a scan of new directory
       if (formData.music_directory) {
-        triggerScan(formData.music_directory);
+        triggerScan();
       }
     } catch (e) {
       console.error('Failed to save settings:', e);
@@ -53,7 +55,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   };
 
   const accents = [
-    { name: 'Sonora Emerald', color: '#00E599' },
+    { name: 'Pyracube Emerald', color: '#00E599' },
     { name: 'Cyan Glow', color: '#00D8F6' },
     { name: 'Electric Purple', color: '#A855F7' },
     { name: 'Sunset Orange', color: '#F97316' },
@@ -96,28 +98,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               <div className="flex gap-2">
                 <input
                   type="text"
-                  value={formData.music_directory || ''}
-                  onChange={(e) => setFormData({ ...formData, music_directory: e.target.value })}
+                  value={storageUri}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setStorageUri(val);
+                    setFormData(prev => ({ ...prev, music_directory: val }));
+                  }}
                   className="flex-1 bg-sonora-base border border-sonora-border focus:border-sonora-accent rounded-xl px-4 py-2.5 text-sm text-sonora-light placeholder-sonora-muted focus:outline-none"
+                  readOnly
                 />
                 <button
                   type="button"
-                  onClick={handleSelectFolder}
+                  onClick={handlePickStorage}
                   className="px-4 py-2.5 bg-sonora-card hover:bg-sonora-elevated border border-sonora-border text-sonora-light rounded-xl text-xs font-semibold flex items-center gap-2 transition-colors"
                 >
                   <FolderOpen className="w-4 h-4" />
-                  <span>Browse</span>
+                  <span>Choose Folder</span>
                 </button>
               </div>
               <p className="text-[11px] text-sonora-muted mt-1">
-                Sonora monitors this folder and auto-organizes imported music inside it.
+                Pyracube monitors this folder and auto-organizes music inside it.
               </p>
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-xl bg-sonora-base/60 border border-sonora-border/40">
               <div>
                 <h5 className="text-xs font-semibold text-sonora-light">Auto-Scan on Startup</h5>
-                <p className="text-[11px] text-sonora-muted">Automatically discover newly added tracks when opening Sonora</p>
+                <p className="text-[11px] text-sonora-muted">Automatically discover newly added tracks when opening Pyracube</p>
               </div>
               <input
                 type="checkbox"
@@ -128,7 +135,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             </div>
           </div>
 
-          {/* Audio & Importer Settings */}
+          {/* Audio Settings */}
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-xs font-bold text-sonora-accent uppercase tracking-wider">
               <Sliders className="w-4 h-4" />
@@ -198,6 +205,41 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                   </button>
                 );
               })}
+            </div>
+          </div>
+
+          {/* Storage Info */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-sonora-accent uppercase tracking-wider">
+              <HardDrive className="w-4 h-4" />
+              <span>Storage Status</span>
+            </div>
+
+            <div className="p-3 rounded-xl bg-sonora-base/60 border border-sonora-border/40">
+              {storageUri && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const result = await Storage.getStorageStats({ uri: storageUri });
+                    alert(`Total: ${(result.total / 1e9).toFixed(1)} GB\nFree: ${(result.free / 1e9).toFixed(1)} GB`);
+                  }}
+                  className="flex items-center justify-between w-full text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-sonora-elevated flex items-center justify-center text-sonora-accent">
+                      <HardDrive className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-sonora-light">Selected Storage</p>
+                      <p className="text-[10px] text-sonora-muted truncate max-w-xs">{storageUri}</p>
+                    </div>
+                  </div>
+                  <RefreshCw className="w-4 h-4 text-sonora-muted" />
+                </button>
+              )}
+              {!storageUri && (
+                <p className="text-xs text-sonora-muted">No storage location selected</p>
+              )}
             </div>
           </div>
         </form>

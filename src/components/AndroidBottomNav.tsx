@@ -1,13 +1,8 @@
 import React from 'react';
-import { Home, Search, Library, Download, PlusCircle } from 'lucide-react';
+import { Home, Search, Library, Download, MoreHorizontal } from 'lucide-react';
 import { useLibrary } from '../context/LibraryContext';
-import { ActiveView } from '../types';
 
-interface AndroidBottomNavProps {
-  onOpenImporter: () => void;
-}
-
-export const AndroidBottomNav: React.FC<AndroidBottomNavProps> = ({ onOpenImporter }) => {
+export const AndroidBottomNav: React.FC = () => {
   const { activeView, setActiveView, activeDownloadsCount } = useLibrary();
 
   const isLibraryActive = ['songs', 'albums', 'artists', 'playlists', 'favorites', 'album-detail', 'artist-detail', 'playlist-detail'].includes(activeView);
@@ -61,13 +56,13 @@ export const AndroidBottomNav: React.FC<AndroidBottomNavProps> = ({ onOpenImport
         )}
       </button>
 
-      {/* Import Modal */}
+      {/* More */}
       <button
-        onClick={onOpenImporter}
-        className="flex flex-col items-center justify-center flex-1 py-1 text-sonora-accent hover:text-sonora-accentHover transition-colors"
+        onClick={() => setActiveView('settings')}
+        className="flex flex-col items-center justify-center flex-1 py-1 text-sonora-muted hover:text-sonora-light transition-colors"
       >
-        <PlusCircle className="w-5 h-5 mb-0.5" />
-        <span className="text-[10px] font-bold">Import</span>
+        <MoreHorizontal className="w-5 h-5 mb-0.5" />
+        <span className="text-[10px] font-semibold">More</span>
       </button>
     </nav>
   );

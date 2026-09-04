@@ -1,37 +1,46 @@
-import React from 'react';
-import { Download, RefreshCw, XCircle, Trash2, CheckCircle2, AlertCircle, PlusCircle, Loader2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Download, RefreshCw, XCircle, Trash2, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { useLibrary } from '../context/LibraryContext';
-import { api } from '../services/api';
-import { DownloadJob } from '../types';
+import { DownloadJob } from '../plugins';
+import { Download as DownloadPlugin } from '../plugins';
 
-interface DownloadsViewProps {
-  onOpenImporter: () => void;
-}
-
-export const DownloadsView: React.FC<DownloadsViewProps> = ({ onOpenImporter }) => {
+export const DownloadsView: React.FC = () => {
   const { downloads, refreshDownloads } = useLibrary();
+  const [localDownloads, setLocalDownloads] = useState<DownloadJob[]>(downloads);
 
-  const handleCancel = async (id: string) => {
-    await api.cancelDownload(id);
+  useEffect(() => {
+    setLocalDownloads(downloads);
+  }, [downloads]);
+
+  useEffect(() => {
+    const loadDownloads = async () => {
+      const result = await DownloadPlugin.getDownloads();
+      setLocalDownloads(result.downloads);
+    };
+    loadDownloads();
+  }, []);
+
+  const handleCancel = async (id: number) => {
+    await DownloadPlugin.cancelDownload({ id });
     refreshDownloads();
   };
 
-  const handleRetry = async (id: string) => {
-    await api.retryDownload(id);
+  const handleRetry = async (id: number) => {
+    await DownloadPlugin.retryDownload({ id });
     refreshDownloads();
   };
 
   const handleClearCompleted = async () => {
-    await api.clearCompletedDownloads();
+    await DownloadPlugin.clearCompleted();
     refreshDownloads();
   };
 
-  const activeDownloads = downloads.filter(d => 
-    ['queued', 'downloading', 'converting', 'tagging'].includes(d.status)
+  const activeDownloads = localDownloads.filter(d => 
+    ['queued', 'downloading', 'converting', 'tagging', 'processing'].includes(d.status)
   );
 
-  const completedDownloads = downloads.filter(d => 
-    ['complete', 'error', 'cancelled'].includes(d.status)
+  const completedDownloads = localDownloads.filter(d => 
+    ['completed', 'failed', 'cancelled'].includes(d.status)
   );
 
   const getStatusBadge = (job: DownloadJob) => {
@@ -51,27 +60,28 @@ export const DownloadsView: React.FC<DownloadsViewProps> = ({ onOpenImporter }) 
           </span>
         );
       case 'converting':
+      case 'processing':
         return (
           <span className="px-2.5 py-1 rounded-full bg-purple-500/15 text-purple-400 font-semibold text-[10px] flex items-center gap-1">
             <Loader2 className="w-3 h-3 animate-spin" />
-            <span>Converting Audio</span>
+            <span>Processing</span>
           </span>
         );
       case 'tagging':
         return (
           <span className="px-2.5 py-1 rounded-full bg-teal-500/15 text-teal-400 font-semibold text-[10px] flex items-center gap-1">
             <Loader2 className="w-3 h-3 animate-spin" />
-            <span>Tagging Metadata</span>
+            <span>Tagging</span>
           </span>
         );
-      case 'complete':
+      case 'completed':
         return (
           <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 font-semibold text-[10px] flex items-center gap-1">
             <CheckCircle2 className="w-3 h-3" />
             <span>Complete</span>
           </span>
         );
-      case 'error':
+      case 'failed':
         return (
           <span className="px-2.5 py-1 rounded-full bg-rose-500/15 text-rose-400 font-semibold text-[10px] flex items-center gap-1">
             <AlertCircle className="w-3 h-3" />
@@ -93,7 +103,7 @@ export const DownloadsView: React.FC<DownloadsViewProps> = ({ onOpenImporter }) 
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-sonora-border/40">
         <div>
           <p className="text-[11px] font-bold text-sonora-accent uppercase tracking-widest">
-            MEDIA IMPORT MANAGER
+            DOWNLOAD MANAGER
           </p>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-white font-['Plus_Jakarta_Sans'] tracking-tight">
             Downloads
@@ -115,11 +125,11 @@ export const DownloadsView: React.FC<DownloadsViewProps> = ({ onOpenImporter }) 
           )}
 
           <button
-            onClick={onOpenImporter}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sonora-accent text-sonora-base font-bold text-xs hover:bg-sonora-accentHover active:scale-95 transition-all shadow-md shadow-sonora-accent/20"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sonora-card hover:bg-sonora-elevated border border-sonora-border/60 text-xs font-semibold text-sonora-muted hover:text-white transition-colors"
+            disabled
           >
-            <PlusCircle className="w-4 h-4 stroke-[2.5]" />
-            <span>New Import</span>
+            <Download className="w-4 h-4 stroke-[2.5]" />
+            <span>New Import (M11)</span>
           </button>
         </div>
       </div>
@@ -140,13 +150,9 @@ export const DownloadsView: React.FC<DownloadsViewProps> = ({ onOpenImporter }) 
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0 flex-1">
                     <div className="w-10 h-10 rounded-lg overflow-hidden bg-sonora-elevated flex-shrink-0">
-                      {job.thumbnail ? (
-                        <img src={job.thumbnail} alt={job.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-sonora-muted">
-                          <Download className="w-4 h-4" />
-                        </div>
-                      )}
+                      <div className="w-full h-full flex items-center justify-center text-sonora-muted">
+                        <Download className="w-4 h-4" />
+                      </div>
                     </div>
                     <div className="min-w-0">
                       <h4 className="text-xs sm:text-sm font-bold text-sonora-light truncate">
@@ -179,8 +185,8 @@ export const DownloadsView: React.FC<DownloadsViewProps> = ({ onOpenImporter }) 
                     />
                   </div>
                   <div className="flex justify-between text-[10px] text-sonora-muted font-mono">
-                    <span>Speed: {job.speed}</span>
-                    <span>ETA: {job.eta}</span>
+                    <span>Speed: {job.speed || '--'}</span>
+                    <span>ETA: {job.eta || '--'}</span>
                   </div>
                 </div>
               </div>
@@ -203,27 +209,23 @@ export const DownloadsView: React.FC<DownloadsViewProps> = ({ onOpenImporter }) 
             >
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 <div className="w-10 h-10 rounded-lg overflow-hidden bg-sonora-elevated flex-shrink-0">
-                  {job.thumbnail ? (
-                    <img src={job.thumbnail} alt={job.title} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-sonora-muted">
-                      <Download className="w-4 h-4" />
-                    </div>
-                  )}
+                  <div className="w-full h-full flex items-center justify-center text-sonora-muted">
+                    <Download className="w-4 h-4" />
+                  </div>
                 </div>
                 <div className="min-w-0">
                   <h4 className="text-xs sm:text-sm font-semibold text-sonora-light truncate">
                     {job.title}
                   </h4>
                   <p className="text-[11px] text-sonora-muted truncate">
-                    {job.artist} {job.error ? `• Error: ${job.error}` : ''}
+                    {job.artist} {job.errorMessage ? `• Error: ${job.errorMessage}` : ''}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
                 {getStatusBadge(job)}
-                {job.status === 'error' && (
+                {job.status === 'failed' && (
                   <button
                     onClick={() => handleRetry(job.id)}
                     className="p-1.5 text-sonora-muted hover:text-sonora-accent transition-colors"
@@ -236,16 +238,11 @@ export const DownloadsView: React.FC<DownloadsViewProps> = ({ onOpenImporter }) 
             </div>
           ))}
 
-          {downloads.length === 0 && (
+          {localDownloads.length === 0 && (
             <div className="py-16 text-center text-sonora-muted space-y-3 bg-sonora-card/30 rounded-2xl border border-sonora-border/30 p-8">
               <Download className="w-12 h-12 mx-auto text-sonora-muted/30" />
               <p className="text-sm font-semibold text-sonora-light">No downloads yet</p>
-              <button
-                onClick={onOpenImporter}
-                className="px-5 py-2.5 rounded-xl bg-sonora-accent text-sonora-base font-bold text-xs hover:bg-sonora-accentHover transition-all shadow-md shadow-sonora-accent/20"
-              >
-                Import YouTube Music
-              </button>
+              <p className="text-xs text-sonora-muted">Import feature coming in M11</p>
             </div>
           )}
         </div>

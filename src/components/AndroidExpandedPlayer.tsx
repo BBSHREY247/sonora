@@ -17,7 +17,6 @@ import {
 } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
 import { useLibrary } from '../context/LibraryContext';
-import { api } from '../services/api';
 
 interface AndroidExpandedPlayerProps {
   isOpen: boolean;
@@ -63,7 +62,7 @@ export const AndroidExpandedPlayer: React.FC<AndroidExpandedPlayerProps> = ({
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  const coverUrl = api.getCoverArtUrl(currentSong.cover_path);
+  const coverUrl = currentSong.artworkUri;
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
   const bars = frequencyData ? Array.from(frequencyData.slice(0, 24)) : Array(24).fill(10);
 
@@ -91,7 +90,7 @@ export const AndroidExpandedPlayer: React.FC<AndroidExpandedPlayerProps> = ({
             PLAYING FROM YOUR LIBRARY
           </p>
           <p className="text-xs font-semibold text-sonora-light truncate max-w-[200px]">
-            {currentSong.album || 'Sonora Tracks'}
+            {currentSong.album || 'Pyracube Tracks'}
           </p>
         </div>
 
@@ -149,7 +148,7 @@ export const AndroidExpandedPlayer: React.FC<AndroidExpandedPlayerProps> = ({
           </div>
 
           <button
-            onClick={() => toggleFavorite(currentSong.id)}
+            onClick={() => toggleFavorite(currentSong.id, !currentSong.favorite)}
             className="p-2 text-sonora-muted hover:text-rose-500 transition-colors active:scale-125"
           >
             <Heart

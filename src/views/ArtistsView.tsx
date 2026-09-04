@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { Users, Search, User } from 'lucide-react';
 import { useLibrary } from '../context/LibraryContext';
-import { Artist, ActiveView } from '../types';
-import { api } from '../services/api';
+import { Artist } from '../types';
 
 export const ArtistsView: React.FC = () => {
   const { artists, openArtistDetail, activeView, setActiveView } = useLibrary();
   const [filterText, setFilterText] = useState('');
 
-  const libraryTabs: { view: ActiveView; label: string }[] = [
+  const libraryTabs: { view: string; label: string }[] = [
     { view: 'songs', label: 'Songs' },
     { view: 'albums', label: 'Albums' },
     { view: 'artists', label: 'Artists' },
@@ -27,7 +26,7 @@ export const ArtistsView: React.FC = () => {
         {libraryTabs.map(tab => (
           <button
             key={tab.view}
-            onClick={() => setActiveView(tab.view)}
+            onClick={() => setActiveView(tab.view as any)}
             className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
               activeView === tab.view
                 ? 'bg-sonora-accent text-sonora-base shadow-md shadow-sonora-accent/20'
@@ -70,14 +69,14 @@ export const ArtistsView: React.FC = () => {
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
         {filteredArtists.map((artist: Artist) => (
           <div
-            key={artist.name}
+            key={artist.id}
             onClick={() => openArtistDetail(artist)}
             className="group glass-card p-4 rounded-2xl cursor-pointer flex flex-col items-center text-center active:scale-95 transition-transform"
           >
             <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden bg-sonora-elevated mb-3 shadow-lg border border-white/10 group-hover:border-sonora-accent/40 transition-colors">
-              {artist.cover_path ? (
+              {artist.artworkUri ? (
                 <img
-                  src={api.getCoverArtUrl(artist.cover_path) || ''}
+                  src={artist.artworkUri}
                   alt={artist.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
@@ -91,7 +90,7 @@ export const ArtistsView: React.FC = () => {
               {artist.name}
             </h4>
             <p className="text-xs text-sonora-muted mt-0.5">
-              Artist • {artist.song_count} {artist.song_count === 1 ? 'track' : 'tracks'}
+              Artist • {artist.songCount} {artist.songCount === 1 ? 'track' : 'tracks'}
             </p>
           </div>
         ))}

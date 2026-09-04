@@ -3,21 +3,17 @@ import {
   Search, 
   Settings as SettingsIcon, 
   RotateCw, 
-  PlusCircle,
-  FolderOpen
 } from 'lucide-react';
 import { useLibrary } from '../context/LibraryContext';
 
 interface HeaderProps {
   onOpenSettings: () => void;
-  onOpenImporter: () => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
   onOpenSettings, 
-  onOpenImporter, 
   searchQuery, 
   setSearchQuery 
 }) => {
@@ -26,8 +22,8 @@ export const Header: React.FC<HeaderProps> = ({
 
   const handleScanClick = async () => {
     try {
-      const res = await triggerScan();
-      setScanMessage(`Scan complete: +${res.stats.added} songs`);
+      await triggerScan();
+      setScanMessage('Scan complete');
       setTimeout(() => setScanMessage(null), 4000);
     } catch (e: any) {
       setScanMessage(e.message || 'Scan failed');
@@ -83,14 +79,6 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <RotateCw className={`w-3.5 h-3.5 ${isScanning ? 'animate-spin text-sonora-accent' : ''}`} />
           <span>{isScanning ? 'Scanning...' : 'Scan Library'}</span>
-        </button>
-
-        <button
-          onClick={onOpenImporter}
-          className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-sonora-accent text-sonora-base hover:bg-sonora-accentHover transition-all text-xs font-bold shadow-md shadow-sonora-accent/20"
-        >
-          <PlusCircle className="w-3.5 h-3.5 stroke-[2.5]" />
-          <span>Import</span>
         </button>
 
         <button

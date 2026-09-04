@@ -1,73 +1,84 @@
 export interface Song {
-  id: string;
+  id: number;
+  uri: string;
   title: string;
   artist: string;
-  album: string;
-  genre: string;
+  album?: string;
+  albumArtist?: string;
   duration: number;
-  file_path: string;
-  cover_path: string | null;
-  date_added: string;
-  play_count: number;
-  last_played: string | null;
-  favorite: number | boolean;
-  track_number: number;
-  year: number | null;
+  genre?: string;
+  year?: number;
+  trackNumber?: number;
+  artworkUri?: string;
+  favorite: boolean;
+  playCount: number;
+  lastPlayed?: number;
+  dateAdded: number;
+  isAvailable: boolean;
 }
 
 export interface Album {
+  id: number;
   name: string;
   artist: string;
-  cover_path: string | null;
-  year: number | null;
-  song_count: number;
+  artworkUri?: string;
+  year?: number;
+  songCount: number;
+  totalDuration: number;
 }
 
 export interface Artist {
+  id: number;
   name: string;
-  song_count: number;
-  album_count: number;
-  cover_path: string | null;
+  artworkUri?: string;
+  songCount: number;
+  albumCount: number;
 }
 
 export interface Playlist {
-  id: string;
+  id: number;
   name: string;
-  description: string;
-  cover_path: string | null;
-  created_at: string;
-  song_count?: number;
-  dynamic_cover?: string | null;
-  songs?: Song[];
+  artworkUri?: string;
+  description?: string;
+  dateCreated: number;
+  dateModified: number;
+  songCount: number;
+  totalDuration: number;
 }
 
-export type DownloadStatus = 'queued' | 'downloading' | 'converting' | 'tagging' | 'complete' | 'error' | 'cancelled';
+export interface PlaylistWithSongs {
+  playlist: Playlist;
+  songs: Song[];
+}
+
+export type DownloadStatus = 'queued' | 'downloading' | 'processing' | 'tagging' | 'completed' | 'failed' | 'cancelled';
 
 export interface DownloadJob {
-  id: string;
-  url: string;
+  id: number;
   title: string;
-  artist: string;
-  album: string;
-  thumbnail: string;
-  duration: number;
+  artist?: string;
+  sourceUrl: string;
+  outputPath?: string;
+  fileSize?: number;
+  downloadedBytes: number;
   status: DownloadStatus;
+  errorMessage?: string;
   progress: number;
-  speed: string;
-  eta: string;
-  error?: string | null;
-  file_path?: string | null;
+  speed?: number;
+  eta?: number;
+  dateCreated: number;
+  dateStarted?: number;
+  dateCompleted?: number;
+  songId?: number;
 }
 
 export type RepeatMode = 'off' | 'all' | 'one';
 
 export interface AppSettings {
   music_directory: string;
-  download_directory: string;
   audio_format: string;
   audio_quality: string;
   auto_scan: string;
-  crossfade_seconds: string;
   theme_accent: string;
 }
 

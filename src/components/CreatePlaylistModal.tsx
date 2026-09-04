@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, ListMusic, Plus } from 'lucide-react';
 import { useLibrary } from '../context/LibraryContext';
+import { Library } from '../plugins';
 
 interface CreatePlaylistModalProps {
   isOpen: boolean;
@@ -21,11 +22,13 @@ export const CreatePlaylistModal: React.FC<CreatePlaylistModalProps> = ({ isOpen
 
     setIsSubmitting(true);
     try {
-      const pl = await createNewPlaylist(name.trim(), description.trim());
+      const plId = await createNewPlaylist(name.trim(), description.trim() || undefined);
       setName('');
       setDescription('');
       onClose();
-      openPlaylistDetail(pl);
+      // Refresh playlists and open the newly created one
+      const updated = await Library.getPlaylistSongs({ playlistId: plId });
+      openPlaylistDetail(updated);
     } catch (e) {
       console.error('Error creating playlist:', e);
     } finally {

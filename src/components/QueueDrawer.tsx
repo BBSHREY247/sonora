@@ -1,7 +1,6 @@
 import React from 'react';
 import { X, Trash2, Music, Play } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
-import { api } from '../services/api';
 import { Song } from '../types';
 
 interface QueueDrawerProps {
@@ -63,9 +62,9 @@ export const QueueDrawer: React.FC<QueueDrawerProps> = ({ isOpen, onClose }) => 
             </p>
             <div className="flex items-center gap-3 p-3 rounded-xl bg-sonora-accent/10 border border-sonora-accent/20">
               <div className="w-12 h-12 rounded-lg overflow-hidden bg-sonora-elevated flex-shrink-0">
-                {currentSong.cover_path ? (
+                {currentSong.artworkUri ? (
                   <img
-                    src={api.getCoverArtUrl(currentSong.cover_path) || ''}
+                    src={currentSong.artworkUri}
                     alt={currentSong.title}
                     className="w-full h-full object-cover"
                   />
@@ -112,9 +111,9 @@ export const QueueDrawer: React.FC<QueueDrawerProps> = ({ isOpen, onClose }) => 
                     className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer"
                   >
                     <div className="w-8 h-8 rounded overflow-hidden bg-sonora-elevated flex-shrink-0 relative">
-                      {song.cover_path ? (
+                      {song.artworkUri ? (
                         <img
-                          src={api.getCoverArtUrl(song.cover_path) || ''}
+                          src={song.artworkUri}
                           alt={song.title}
                           className="w-full h-full object-cover"
                         />

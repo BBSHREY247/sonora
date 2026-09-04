@@ -13,7 +13,6 @@ import {
 import { Song, Playlist } from '../types';
 import { usePlayer } from '../context/PlayerContext';
 import { useLibrary } from '../context/LibraryContext';
-import { api } from '../services/api';
 
 interface SongRowProps {
   song: Song;
@@ -56,10 +55,10 @@ export const SongRow: React.FC<SongRowProps> = ({
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return '';
+  const formatDate = (timestamp: number) => {
+    if (!timestamp) return '';
     try {
-      const d = new Date(dateStr);
+      const d = new Date(timestamp);
       return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
     } catch {
       return '';
@@ -97,9 +96,9 @@ export const SongRow: React.FC<SongRowProps> = ({
       {/* Song Title & Cover & Artist */}
       <div className={`flex items-center gap-3 ${showAlbum ? 'col-span-4' : 'col-span-6'} min-w-0`}>
         <div className="w-10 h-10 rounded-md overflow-hidden bg-sonora-elevated flex-shrink-0 shadow-sm">
-          {song.cover_path ? (
+          {song.artworkUri ? (
             <img
-              src={api.getCoverArtUrl(song.cover_path) || ''}
+              src={song.artworkUri}
               alt={song.title}
               className="w-full h-full object-cover"
             />
@@ -116,7 +115,7 @@ export const SongRow: React.FC<SongRowProps> = ({
           <p 
             onClick={(e) => {
               e.stopPropagation();
-              openArtistDetail({ name: song.artist, song_count: 1, album_count: 1, cover_path: song.cover_path });
+              openArtistDetail({ id: 0, name: song.artist, artworkUri: song.artworkUri, songCount: 1, albumCount: 1 });
             }}
             className="text-xs text-sonora-muted hover:text-sonora-light truncate cursor-pointer"
           >
@@ -131,7 +130,7 @@ export const SongRow: React.FC<SongRowProps> = ({
           <span 
             onClick={(e) => {
               e.stopPropagation();
-              openAlbumDetail({ name: song.album, artist: song.artist, cover_path: song.cover_path, year: song.year, song_count: 1 });
+              openAlbumDetail({ id: 0, name: song.album || '', artist: song.artist, artworkUri: song.artworkUri, year: song.year, songCount: 1, totalDuration: 0 });
             }}
             className="hover:text-sonora-light hover:underline cursor-pointer"
           >
@@ -143,7 +142,7 @@ export const SongRow: React.FC<SongRowProps> = ({
       {/* Date Added */}
       {showDateAdded && (
         <div className="col-span-2 text-xs truncate hidden md:block">
-          {formatDate(song.date_added)}
+          {formatDate(song.dateAdded)}
         </div>
       )}
 
@@ -152,7 +151,7 @@ export const SongRow: React.FC<SongRowProps> = ({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            toggleFavorite(song.id);
+            toggleFavorite(song.id, !song.favorite);
           }}
           className={`transition-colors ${
             song.favorite ? 'text-rose-500' : 'opacity-0 group-hover:opacity-100 hover:text-rose-500'

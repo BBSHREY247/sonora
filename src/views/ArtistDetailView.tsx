@@ -3,11 +3,10 @@ import { ArrowLeft, Play, Shuffle, User } from 'lucide-react';
 import { useLibrary } from '../context/LibraryContext';
 import { usePlayer } from '../context/PlayerContext';
 import { SongRow } from '../components/SongRow';
-import { api } from '../services/api';
 import { Song } from '../types';
 
 export const ArtistDetailView: React.FC = () => {
-  const { selectedArtist, setActiveView } = useLibrary();
+  const { selectedArtist, setActiveView, getSongsByArtist } = useLibrary();
   const { playList, toggleShuffle } = usePlayer();
   const [songs, setSongs] = useState<Song[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -15,7 +14,7 @@ export const ArtistDetailView: React.FC = () => {
   useEffect(() => {
     if (selectedArtist) {
       setIsLoading(true);
-      api.getArtistSongs(selectedArtist.name)
+      getSongsByArtist(selectedArtist.name)
         .then(setSongs)
         .finally(() => setIsLoading(false));
     }
@@ -36,8 +35,6 @@ export const ArtistDetailView: React.FC = () => {
     }
   };
 
-  const coverUrl = api.getCoverArtUrl(selectedArtist.cover_path);
-
   return (
     <div className="p-4 sm:p-8 space-y-6 overflow-y-auto h-full pb-32 select-none">
       {/* Back Button */}
@@ -52,8 +49,8 @@ export const ArtistDetailView: React.FC = () => {
       {/* Hero Artist Header */}
       <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6 pb-6 border-b border-sonora-border/40">
         <div className="relative w-40 h-40 sm:w-48 sm:h-48 rounded-full overflow-hidden bg-sonora-elevated shadow-2xl flex-shrink-0 border-2 border-white/10">
-          {coverUrl ? (
-            <img src={coverUrl} alt={selectedArtist.name} className="w-full h-full object-cover" />
+          {selectedArtist.artworkUri ? (
+            <img src={selectedArtist.artworkUri} alt={selectedArtist.name} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-sonora-muted">
               <User className="w-16 h-16" />

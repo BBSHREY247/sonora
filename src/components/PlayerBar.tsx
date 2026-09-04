@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
 import { useLibrary } from '../context/LibraryContext';
-import { api } from '../services/api';
 
 interface PlayerBarProps {
   onToggleQueue: () => void;
@@ -73,9 +72,9 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({ onToggleQueue, isQueueOpen
         {currentSong ? (
           <>
             <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-sonora-card flex-shrink-0 shadow-md border border-white/5">
-              {currentSong.cover_path ? (
+              {currentSong.artworkUri ? (
                 <img
-                  src={api.getCoverArtUrl(currentSong.cover_path) || ''}
+                  src={currentSong.artworkUri}
                   alt={currentSong.title}
                   className="w-full h-full object-cover"
                 />
@@ -103,7 +102,7 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({ onToggleQueue, isQueueOpen
             </div>
 
             <button
-              onClick={() => toggleFavorite(currentSong.id)}
+              onClick={() => toggleFavorite(currentSong.id, !currentSong.favorite)}
               className="text-sonora-muted hover:text-rose-500 transition-colors ml-2"
               title={currentSong.favorite ? "Remove from Favorites" : "Add to Favorites"}
             >
@@ -220,7 +219,7 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({ onToggleQueue, isQueueOpen
         >
           <ListMusic className="w-4 h-4" />
           {queue.length > 0 && (
-            <span className="absolute 1 top-1 right-1 w-2 h-2 rounded-full bg-sonora-accent" />
+            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-sonora-accent" />
           )}
         </button>
 
